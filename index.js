@@ -9,22 +9,24 @@ const handleError = (e, response) => {
   response.end('Something went wrong. Please check the server logs for more info.')
 }
 
-const getName = (item) => {
-  let name = '';
+const getDescription = (item) => {
   if (item.fields.company || item.fields.location) {
     if (item.fields.company && item.fields.location) {
       return item.fields.company + ', ' + item.fields.location;
     } else {
       return item.fields.company || item.fields.location;
     }
+  } else if (item.fields.twitter_user) {
+    return `via <a href="${item.fields.source_url}">${item.fields.twitter_user}</a> on Twitter`;
   } else {
-    return item.fields.twitter_user;
+    return '';
   }
 }
 
 const generateFeed = (data) => {
   const feed = new Feed({
     id: "https://hire-dr-at-proxy.karllhughes.now.sh",
+    link: "https://hire-dr-at-proxy.karllhughes.now.sh",
     title: "HireDevRels RSS feed",
     description: "An automatically generated feed of DevRel jobs",
   });
@@ -32,19 +34,14 @@ const generateFeed = (data) => {
   data.records.forEach(item => {
     feed.addItem({
       title: item.fields.title,
-      id: item.id + '-' + item.fields.source,
       link: item.fields.url,
-      description: item.fields.text,
-      author: [{
-        name: getName(item),
-        email: item.fields.icon ? item.fields.icon[0].thumbnails.large.url : null,
-        link: item.fields.source_url,
-      }],
+      image: item.fields.icon ? item.fields.icon[0].thumbnails.large.url : null,
+      description: getDescription(item),
       date: new Date(item.fields.created),
     })
   });
 
-  return feed.atom1();
+  return feed.rss2();
 }
 
 module.exports = (request, response) => {
